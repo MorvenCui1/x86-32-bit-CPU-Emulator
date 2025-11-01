@@ -88,7 +88,7 @@ int main() {
     //X86 instructions to be executed
     string code;
     //code = "B801000000BBFFFFFFFF03C3"; //Add 1 and -1
-    code = "E918000000B801000000CD80B8FFFFFFFFC3"; //Branch to subroutine, load -1 into EAX, return, and exit system in linux
+    code = "E913000000B801000000CD80B8FFFFFFFFC3"; //Branch to subroutine, load -1 into EAX, return, and exit system in linux
 
     //Initialize all registers to 0
     registers.X86_REG_EAX = 0;
@@ -249,7 +249,7 @@ int main() {
             }
             *value = getOperand(*hexString);
 
-            registers.X86_REG_EIP = registers.X86_REG_EIP + *value; //Change instruction pointer by offset
+            registers.X86_REG_EIP = registers.X86_REG_EIP + 5 + *value; //Change instruction pointer by offset
 
             delete value; 
             delete hexString;
