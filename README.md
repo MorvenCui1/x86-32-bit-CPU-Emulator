@@ -1,1 +1,1 @@
-CPU emulator for x86 instruction set. Programmed in Python for easier understanding and programmed in C++ for efficiency.
+CPU emulator for x86 32-bit instruction set. Programmed in C++ for runtime efficiency, Python script was used at first to verify implementation logic.
