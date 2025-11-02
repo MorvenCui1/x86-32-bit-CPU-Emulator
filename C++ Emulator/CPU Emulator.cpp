@@ -88,7 +88,7 @@ int main() {
     //X86 instructions to be executed
     string code;
     //code = "B801000000BBFFFFFFFF03C3"; //Add 1 and -1
-    code = "E913000000B801000000CD80B8FFFFFFFFC3"; //Branch to subroutine, load -1 into EAX, return, and exit system in linux
+    code = "E807000000B801000000CD80B8FFFFFFFFC3"; //Branch to subroutine, load -1 into EAX, return, and exit system in linux
 
     //Initialize all registers to 0
     registers.X86_REG_EAX = 0;
@@ -235,7 +235,7 @@ int main() {
             registers.X86_REG_EIP += 4; //Sets instruction pointer to next instruction
         }
         //Branch to subroutine address
-        else if (code[registers.X86_REG_EIP] == 'E' && code[registers.X86_REG_EIP + 1] == '9') {
+        else if (code[registers.X86_REG_EIP] == 'E' && code[registers.X86_REG_EIP + 1] == '8') {
             registers.X86_REG_ESP--; //Decrement stack pointer
             stack[registers.X86_REG_ESP] = registers.X86_REG_EIP + 10; //Load next instruction address into stack 
 
@@ -247,9 +247,9 @@ int main() {
             for (int i = 1; i <= 4; i++) {
                 *hexString = *hexString + code[registers.X86_REG_EIP + 2*i] + code[registers.X86_REG_EIP + 2*i + 1];
             }
-            *value = getOperand(*hexString);
+            *value = getOperand(*hexString); //Number of bytes to offset next EIP address by
 
-            registers.X86_REG_EIP = registers.X86_REG_EIP + 5 + *value; //Change instruction pointer by offset
+            registers.X86_REG_EIP = registers.X86_REG_EIP + 10 + (*value)*2; //Change instruction pointer by offset
 
             delete value; 
             delete hexString;
