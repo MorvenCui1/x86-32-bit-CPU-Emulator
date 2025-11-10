@@ -20,18 +20,25 @@ registers[X86_REG_EDX] = 0
 #Set it to beginning of code
 registers[X86_REG_EIP] = 0
 
+#Flags
+flags = {}
+flags[X86_EFLAGS_SET_ZF] = False
+
 #Stack
 stack = []
 
 #Set reset pin to initially false
 reset = False
 
+#Check to see if need to increment instruction pointer
+changeEIP = True
 #While instruction pointer has not reached end of code yet
 while registers[X86_REG_EIP] < len(code):
-    if reset: #If reset is true set all registers back to initial value
+    if reset: #If reset is true set all registers and flags back to initial value
         registers[X86_REG_EAX] = 0
         registers[X86_REG_EBX] = 0
         registers[X86_REG_EDX] = 0
+        flags[X86_EFLAGS_SET_ZF] = False
         reset = False
 
     address = registers[X86_REG_EIP] #Variable to hold current instruction pointer
@@ -44,6 +51,8 @@ while registers[X86_REG_EIP] < len(code):
     except StopIteration:
         print("Invalid instruction")
 
+    #Increment instruction pointer
+    changeEIP = True
     #Debug print
     print(f"{address:#010x}:\t{instruction.mnemonic}\t{instruction.op_str}")
 
@@ -130,14 +139,26 @@ while registers[X86_REG_EIP] < len(code):
     elif mnemonic == "call":
         if operands[0].type == X86_OP_IMM:
             stack.append(registers[X86_REG_EIP] + instruction.size)
-            registers[X86_REG_EIP] += operands[0].value.imm
+            registers[X86_REG_EIP] = operands[0].value.imm
+            changeEIP = False
             print("Jumped to subroutine address: " + str(registers[X86_REG_EIP]))
-            continue
     #ret, return from subroutine 
     elif mnemonic == "ret":
         registers[X86_REG_EIP] = stack.pop()
+        changeEIP = False
         print("Returned to address in stack: " + str(registers[X86_REG_EIP]))
-        continue
+    #CMP, comapres two registers
+    elif mnemonic == "cmp":
+        if operands[0].type == X86_OP_REG and operands[1].type == X86_OP_REG:
+            flags[X86_EFLAGS_SET_ZF] = (registers[X86_REG_EAX] == registers[X86_REG_EBX])
+            print("Zero flag is: " + str(flags[X86_EFLAGS_SET_ZF]))
+    #JE, conditional branching
+    elif mnemonic == "je":
+        if operands[0].type == X86_OP_IMM:
+            if (flags[X86_EFLAGS_SET_ZF]):
+                registers[X86_REG_EIP] = operands[0].value.imm
+                changeEIP = False
+                print("Jumped to address: " + str(registers[X86_REG_EIP]))
     #exit system in linux
     elif mnemonic == "int":
         if operands[0].type == X86_OP_IMM and registers[X86_REG_EAX] == 1 and registers[X86_REG_EBX] == 0:
@@ -149,4 +170,5 @@ while registers[X86_REG_EIP] < len(code):
         break
 
     #Increment EIP to next instruction location based on size of last executed instruction
-    registers[X86_REG_EIP] += instruction.size
+    if (changeEIP):
+        registers[X86_REG_EIP] += instruction.size

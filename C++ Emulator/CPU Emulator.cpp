@@ -17,6 +17,12 @@ struct {
     int X86_REG_ESP;
 } registers;
 
+//Structure to represent flags
+struct {
+    //Zero flag
+    bool X86_EFLAGS_SET_ZF;
+} flags;
+
 //Stack
 int stack[32];
 
@@ -88,7 +94,8 @@ int main() {
     //X86 instructions to be executed
     string code;
     //code = "B801000000BBFFFFFFFF03C3"; //Add 1 and -1
-    code = "E807000000B801000000CD80B8FFFFFFFFC3"; //Branch to subroutine, load -1 into EAX, return, and exit system in linux
+    //code = "E807000000B801000000CD80B8FFFFFFFFC3"; //Branch to subroutine, load -1 into EAX, return, and exit system in linux
+    code = "39D87405B8FFFFFFFFB801000000BBFFFFFFFF03C3"; //Checks if EAX and EBX are equal, conditional branches, then adds 1 and -1
 
     //Initialize all registers to 0
     registers.X86_REG_EAX = 0;
@@ -98,6 +105,8 @@ int main() {
     registers.X86_REG_EIP = 0;
     //Initialize stack pointer to top of stack
     registers.X86_REG_ESP = 32;
+    //Initialize zero flag to false
+    flags.X86_EFLAGS_SET_ZF = false;
 
     //Set reset pin to initially false
     bool reset = false;
@@ -111,6 +120,8 @@ int main() {
             registers.X86_REG_EDX = 0;
             registers.X86_REG_EIP = 0;
             registers.X86_REG_ESP = 32;
+            //Reset zero flag to false
+            flags.X86_EFLAGS_SET_ZF = false;
             //Reset stack
             for (int i = 0; i < 32; ++i) {
                 stack[i] = 0;
@@ -263,6 +274,37 @@ int main() {
             registers.X86_REG_ESP++; //Increment stack pointer
 
             cout << "Returned to address: " << registers.X86_REG_EIP << "\n";
+        }
+        //Compare to register values
+        else if (code[registers.X86_REG_EIP] == '3' && code[registers.X86_REG_EIP + 1] == '9' && code[registers.X86_REG_EIP + 2] == 'D' && code[registers.X86_REG_EIP + 3] == '8') {
+            flags.X86_EFLAGS_SET_ZF = (registers.X86_REG_EAX == registers.X86_REG_EBX);
+            registers.X86_REG_EIP += 4;
+
+            cout << "Zero flag: " << flags.X86_EFLAGS_SET_ZF << "\n";
+        }
+        //Jump if equals
+        else if (code[registers.X86_REG_EIP] == '7' && code[registers.X86_REG_EIP + 1] == '4') {
+            if (flags.X86_EFLAGS_SET_ZF) {
+                //Allocate memory to temporarily use to store operand values
+                int* value = new int;
+                string* hexString = new string;
+                //Retrieve operand values
+                *hexString = "";
+                *hexString = *hexString + code[registers.X86_REG_EIP + 2] + code[registers.X86_REG_EIP + 3];
+                *value = getOperand(*hexString); //Number of bytes to offset next EIP address by
+
+                registers.X86_REG_EIP = registers.X86_REG_EIP + 4 + (*value)*2; //Change instruction pointer by offset
+
+                delete value; 
+                delete hexString;
+
+                cout << "Equal branched to address: " << registers.X86_REG_EIP << "\n";
+            }
+            else {
+                registers.X86_REG_EIP = registers.X86_REG_EIP + 4;
+
+                cout << "Not equal, did not branch\n";
+            }
         }
         //exit system call on Linux
         else if (code[registers.X86_REG_EIP] == 'C' && code[registers.X86_REG_EIP + 1] == 'D' 
